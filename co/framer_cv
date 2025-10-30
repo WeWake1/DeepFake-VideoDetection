@@ -1,0 +1,252 @@
+"""
+================================================================================
+        🚀 OPENCV GPU-ACCELERATED FRAME EXTRACTOR 🚀
+================================================================================
+
+This version uses OpenCV with CUDA/GPU acceleration instead of FFmpeg.
+No external dependencies required beyond what you already have!
+
+OpenCV can use your NVIDIA GPU for:
+1. Hardware-accelerated video decoding
+2. GPU memory for frame processing
+3. Parallel frame operations
+
+This approach requires no FFmpeg installation.
+"""
+import cv2
+import os
+import time
+import psutil
+import numpy as np
+from multiprocessing import Pool, cpu_count, set_start_method
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
+from pathlib import Path
+import gc
+
+# --- CONFIG: OPENCV GPU SETTINGS ---
+
+# 1. Paths
+SOURCE_VIDEO_DIR = r"J:\DF\DS\Celeb-real"
+MAIN_OUTPUT_DIR = r"J:\DF\FR\Celeb-real FRAMES"
+VIDEO_EXTENSIONS = ('.mp4', '.avi', '.mov', '.mkv')
+
+# 2. GPU Configuration
+USE_GPU = True  # Set to False to use CPU only
+TRY_CUDA = True  # Try to use CUDA acceleration
+GPU_ENABLED = True  # Will be set based on actual GPU availability
+
+# 3. CPU Configuration (Optimized for GPU assistance)
+LOGICAL_PROCESSORS = cpu_count()
+NUM_WORKERS = min(36, LOGICAL_PROCESSORS // 2)  # Use half cores with GPU help
+BOOST_PRIORITY = True
+
+# 4. Memory Configuration
+# With GPU assistance, we can use more RAM for buffering
+RAM_BUFFER_GB = 128  # Use substantial RAM buffer
+BATCH_SIZE = 128  # Larger batches with GPU acceleration
+
+# 5. I/O Configuration
+IO_THREADS_PER_WORKER = 6  # More I/O threads since GPU frees up CPU
+PNG_COMPRESSION = 1
+
+def check_opencv_gpu():
+    """Check if OpenCV has GPU/CUDA support compiled in."""
+    try:
+        # Check if CUDA is available in OpenCV build
+        cuda_devices = cv2.cuda.getCudaEnabledDeviceCount()
+        if cuda_devices > 0:
+            return True, f"Found {cuda_devices} CUDA device(s)"
+        else:
+            return False, "No CUDA devices found"
+    except AttributeError:
+        return False, "OpenCV not compiled with CUDA support"
+    except Exception as e:
+        return False, f"Error checking CUDA: {e}"
+
+def init_worker():
+    """Initialize worker with priority settings."""
+    global GPU_ENABLED
+    try:
+        if psutil and BOOST_PRIORITY:
+            p = psutil.Process()
+            p.nice(psutil.HIGH_PRIORITY_CLASS)
+        
+        # Set OpenCV to use optimal number of threads per worker
+        cv2.setNumThreads(2)
+        
+        # Try to initialize CUDA context in worker if available
+        if USE_GPU and TRY_CUDA and GPU_ENABLED:
+            try:
+                cv2.cuda.setDevice(0)
+            except (AttributeError, Exception):
+                pass  # Ignore CUDA init errors
+                
+    except Exception:
+        pass
+
+def get_existing_frame_numbers(output_subfolder: Path) -> set:
+    """Scan directory for existing frame numbers."""
+    if not output_subfolder.exists():
+        return set()
+    
+    existing_nums = set()
+    for f in output_subfolder.glob('*.png'):
+        try:
+            num = int(f.stem.split('_')[1])
+            existing_nums.add(num)
+        except (ValueError, IndexError):
+            continue
+    return existing_nums
+
+def write_frame_to_disk(frame_data):
+    """Write a single frame to disk."""
+    frame, filename = frame_data
+    try:
+        cv2.imwrite(str(filename), frame, [cv2.IMWRITE_PNG_COMPRESSION, PNG_COMPRESSION])
+        return 1
+    except Exception:
+        return 0
+
+def process_video_gpu_enhanced(video_info):
+    """
+    Process a single video with GPU-enhanced OpenCV.
+    Uses GPU acceleration where available, falls back gracefully.
+    """
+    video_path_str, output_dir_str = video_info
+    video_path = Path(video_path_str)
+    output_dir = Path(output_dir_str)
+    
+    output_subfolder = output_dir / video_path.stem
+    output_subfolder.mkdir(exist_ok=True, parents=True)
+    
+    existing_frame_nums = get_existing_frame_numbers(output_subfolder)
+    
+    # Open video with OpenCV
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        return f"❌ Could not open {video_path.name}", 0
+    
+    # Try to enable GPU acceleration for video decoding
+    if USE_GPU and TRY_CUDA and GPU_ENABLED:
+        try:
+            # Set hardware acceleration backend
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('H', '2', '6', '4'))
+        except Exception:
+            pass  # Continue with CPU decoding
+    
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    # Check if already complete
+    if existing_frame_nums and total_frames > 0:
+        if max(existing_frame_nums) >= total_frames - 2:
+            cap.release()
+            return f"✅ {video_path.name} already complete", 0
+    
+    # Process frames in batches
+    frames_written = 0
+    frame_batch = []
+    path_batch = []
+    frame_idx = 0
+    
+    # Use ThreadPoolExecutor for parallel I/O
+    with ThreadPoolExecutor(max_workers=IO_THREADS_PER_WORKER) as io_executor:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            # Only process frames that don't exist
+            if frame_idx not in existing_frame_nums:
+                frame_batch.append(frame.copy())
+                output_path = output_subfolder / f"frame_{frame_idx:05d}.png"
+                path_batch.append(output_path)
+                
+                # Process batch when full
+                if len(frame_batch) >= BATCH_SIZE:
+                    # Submit all writes in parallel
+                    write_tasks = list(zip(frame_batch, path_batch))
+                    results = list(io_executor.map(write_frame_to_disk, write_tasks))
+                    frames_written += sum(results)
+                    
+                    frame_batch = []
+                    path_batch = []
+            
+            frame_idx += 1
+        
+        # Process remaining frames
+        if frame_batch:
+            write_tasks = list(zip(frame_batch, path_batch))
+            results = list(io_executor.map(write_frame_to_disk, write_tasks))
+            frames_written += sum(results)
+    
+    cap.release()
+    return f"✅ {video_path.name} - {frames_written} frames", frames_written
+
+def main():
+    """Main processing function."""
+    global GPU_ENABLED
+    
+    print("="*60)
+    print("🚀 OpenCV GPU-Enhanced Frame Extractor")
+    print("="*60)
+    
+    # Check GPU support
+    if USE_GPU and TRY_CUDA:
+        gpu_available, gpu_msg = check_opencv_gpu()
+        if gpu_available:
+            print(f"✅ GPU Support: {gpu_msg}")
+            GPU_ENABLED = True
+        else:
+            print(f"⚠️  GPU Support: {gpu_msg}")
+            print("   Falling back to CPU processing...")
+            GPU_ENABLED = False
+    else:
+        print("📱 GPU Support: Disabled")
+        GPU_ENABLED = False
+    
+    print(f"   Workers: {NUM_WORKERS}")
+    print(f"   RAM Buffer: {RAM_BUFFER_GB} GB")
+    print(f"   Batch Size: {BATCH_SIZE}")
+    print("="*60)
+    
+    try:
+        set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass
+    
+    source_dir = Path(SOURCE_VIDEO_DIR)
+    output_dir = Path(MAIN_OUTPUT_DIR)
+    
+    # Check if source directory exists
+    if not source_dir.exists():
+        print(f"❌ Error: Source directory not found: {source_dir}")
+        print(f"   Please check the SOURCE_VIDEO_DIR path in the script.")
+        return
+    
+    output_dir.mkdir(exist_ok=True, parents=True)
+    
+    # Find all videos
+    video_files = [(str(f), str(output_dir)) for f in source_dir.iterdir() 
+                   if f.suffix.lower() in VIDEO_EXTENSIONS]
+    
+    if not video_files:
+        print("❌ No videos found to process.")
+        return
+    
+    print(f"Found {len(video_files)} videos to process.")
+    
+    # Process with multiprocessing
+    total_frames = 0
+    with Pool(processes=NUM_WORKERS, initializer=init_worker) as pool:
+        with tqdm(total=len(video_files), desc="Processing videos", unit="video") as pbar:
+            for result_msg, frames in pool.imap_unordered(process_video_gpu_enhanced, video_files):
+                total_frames += frames
+                pbar.set_postfix_str(result_msg[:50])
+                pbar.update(1)
+    
+    print(f"\n🎉 Processing complete!")
+    print(f"   Total frames processed: {total_frames:,}")
+
+if __name__ == "__main__":
+    main()

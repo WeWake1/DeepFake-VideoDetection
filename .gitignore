@@ -1,0 +1,40 @@
+# Ignore large files and datasets
+
+# Dataset folders
+DS/
+FR/
+
+# Image and video files
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.avi
+
+# Face detection results on other drives
+F:/
+H:/
+I:/
+
+# Large JSON files (optional - remove this line if you want to include mappings)
+face_detection_results.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.log
+venv/
+env/
+
+# Model checkpoints
+*.pth
+*.h5
+*.weights
+checkpoints/
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/

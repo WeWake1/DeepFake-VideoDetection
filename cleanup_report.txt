@@ -1,0 +1,21 @@
+============================================================
+     CLEANUP AND VERIFICATION REPORT
+============================================================
+
+Real Videos: 590
+  - With frames: 589
+  - Missing: 1
+
+Fake Videos: 5639
+  - With frames: 5638
+  - Missing: 1
+
+Empty folders deleted: 7938
+Incomplete folders deleted: 65
+
+Frame Distribution Across Drives:
+  H:: 1529 videos
+  J:: 2487 videos
+  I:: 2211 videos
+
+============================================================

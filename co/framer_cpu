@@ -1,0 +1,300 @@
+"""
+================================================================================
+          🚀 EXTREME RAM-BASED FRAME EXTRACTOR for High-Core CPUs 🚀
+================================================================================
+
+This script is designed for systems with massive RAM (e.g., 256GB) and high
+core counts (e.g., 72-core Intel Xeon W9-3475X).
+
+It solves the I/O bottleneck by pre-loading entire videos into RAM before
+distributing frames to a pool of CPU workers. This ensures that CPU cores
+are constantly fed with data from memory, not waiting for slow disk access.
+
+ARCHITECTURE:
+1.  **MAIN PROCESS (Orchestrator):**
+    - Scans for videos.
+    - For each video, checks if it's already complete (resume logic).
+    - If not complete, it loads all necessary frames into a large list in RAM.
+    - It then creates a list of "work items" (frame data + output path).
+
+2.  **MULTIPROCESSING POOL (72 Workers):**
+    - A pool of 72 worker processes is created, pinned to specific CPU cores.
+    - The main process dispatches the work items (from RAM) to these workers.
+
+3.  **WORKER PROCESS:**
+    - Receives a batch of frames from the main process (already in memory).
+    - Its only job is to perform the CPU-bound task of PNG encoding.
+    - It uses an internal ThreadPool to write the encoded frames to disk in
+      parallel, hiding disk I/O latency.
+
+This decouples Reading, Processing, and Writing, ensuring the CPU is the
+bottleneck, not the storage system.
+
+"""
+import cv2
+import os
+import time
+import psutil
+import numpy as np
+from multiprocessing import Pool, cpu_count, set_start_method
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
+from pathlib import Path
+import gc
+
+# ---  CONFIG: EXTREME RAM & CPU SETTINGS ---
+
+# 1. Path to videos and frames
+SOURCE_VIDEO_DIR = r"J:\DF\DS\Celeb-synthesis"
+MAIN_OUTPUT_DIR = r"H:\Caleb S FRAMES 3"
+OLD_OUTPUT_DIRS = [
+    r"J:\DF\FR\Celeb-synthesis FRAMES",  # First old drive
+    r"I:\Caleb S Rem FRAMES"  # Second old drive
+]
+VIDEO_EXTENSIONS = ('.mp4', '.avi', '.mov', '.mkv')
+
+# 2. CPU Configuration (Utilize ALL cores)
+LOGICAL_PROCESSORS = cpu_count()
+NUM_WORKERS = min(64, LOGICAL_PROCESSORS)  # Total worker pool size
+CONCURRENT_VIDEOS = 16  # Number of videos to process simultaneously
+ENABLE_CPU_AFFINITY = False  # Disable affinity for better dynamic allocation
+BOOST_PRIORITY = True
+
+# 3. RAM Configuration
+# Target RAM usage for the frame buffer. We leave a buffer for the OS.
+# With 256GB RAM, we can safely target 200GB.
+# A 1080p frame is ~6MB (uncrompressed). 200GB / 6MB = ~34,000 frames.
+# This can hold multiple videos in RAM at once.
+RAM_BUFFER_GB = 200
+RAM_BUFFER_BYTES = RAM_BUFFER_GB * (1024**3)
+
+# 4. I/O Configuration
+# Each of the 72 workers will use this many threads to write frames to disk.
+IO_THREADS_PER_WORKER = 4
+# NO compression - save raw frames for maximum quality
+PNG_COMPRESSION = 0  # 0 = no compression, fastest write speed
+
+# --- END CONFIG ---
+
+def init_worker():
+    """Initializer for each worker process: sets CPU affinity and priority."""
+    if not psutil: return
+    try:
+        current_process = psutil.Process()
+        if BOOST_PRIORITY:
+            current_process.nice(psutil.HIGH_PRIORITY_CLASS)
+        if ENABLE_CPU_AFFINITY:
+            worker_id = int(os.getpid()) % LOGICAL_PROCESSORS
+            current_process.cpu_affinity([worker_id])
+        cv2.setNumThreads(0) # Disable OpenCV threading, we manage it.
+    except Exception:
+        pass # Ignore errors if permissions are insufficient
+
+def write_frame_to_disk(frame_data):
+    """Helper function to write a single frame, used by the ThreadPoolExecutor."""
+    frame, filename = frame_data
+    try:
+        cv2.imwrite(str(filename), frame, [cv2.IMWRITE_PNG_COMPRESSION, PNG_COMPRESSION])
+        return True
+    except Exception:
+        return False
+
+def get_resume_info(output_subfolder, old_output_subfolders=None):
+    """
+    Checks directories for existing frames and determines the starting point.
+    Now checks ALL old drives AND new drive to find all completed frames.
+    """
+    existing_frame_numbers = set()
+    
+    # Check new drive (current output location)
+    if output_subfolder.exists():
+        existing_frames = list(output_subfolder.glob('*.png'))
+        for f in existing_frames:
+            try:
+                num = int(f.stem.split('_')[1])
+                existing_frame_numbers.add(num)
+            except (ValueError, IndexError):
+                continue
+    
+    # Check ALL old drives (previous output locations) if provided
+    if old_output_subfolders:
+        for old_subfolder in old_output_subfolders:
+            if old_subfolder and old_subfolder.exists():
+                old_existing_frames = list(old_subfolder.glob('*.png'))
+                for f in old_existing_frames:
+                    try:
+                        num = int(f.stem.split('_')[1])
+                        existing_frame_numbers.add(num)
+                    except (ValueError, IndexError):
+                        continue
+    
+    if not existing_frame_numbers:
+        return 0, set()
+
+    # The next frame to write is one after the highest existing number.
+    # The set of existing numbers is used to avoid re-reading them.
+    return max(existing_frame_numbers) + 1, existing_frame_numbers
+
+
+def process_single_video(video_info):
+    """
+    Process a single video - designed to be called by the worker pool.
+    This allows multiple videos to be processed in parallel.
+    """
+    video_path, output_dir, old_output_dirs = video_info
+    
+    video_name_without_ext = video_path.stem
+    output_subfolder = output_dir / video_name_without_ext
+    output_subfolder.mkdir(exist_ok=True, parents=True)
+    
+    # Create list of old drive subfolders to check
+    old_output_subfolders = []
+    if old_output_dirs:
+        for old_dir in old_output_dirs:
+            if old_dir:
+                old_output_subfolders.append(old_dir / video_name_without_ext)
+
+    # --- Robust Resume & Pre-load Logic (checks ALL drives) ---
+    start_frame, existing_frame_nums = get_resume_info(output_subfolder, old_output_subfolders)
+
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        return f"❌ Error: Could not open {video_path.name}", 0
+    
+    total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    if start_frame >= total_video_frames - 1 and total_video_frames > 0:
+        cap.release()
+        return f"✅ {video_path.name} already complete", 0
+
+    # --- Load frames into RAM ---
+    frames_in_ram = []
+    work_items = []
+    
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0) # Rewind to start
+    
+    current_frame_idx = 0
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        # Only add the frame to our list if it doesn't already exist on disk
+        if current_frame_idx not in existing_frame_nums:
+            # This check is the core of the "no duplicates" logic
+            frames_in_ram.append(frame.copy())  # Use copy to avoid reference issues
+            output_path = output_subfolder / f"frame_{current_frame_idx:05d}.png"
+            work_items.append((len(frames_in_ram) - 1, output_path))
+        
+        current_frame_idx += 1
+    
+    cap.release()
+
+    if not work_items:
+        return f"✅ {video_path.name} - no new frames", 0
+
+    # --- Process frames using multiprocessing for TRUE parallelism ---
+    frames_written = 0
+    
+    # Create batches of frames for parallel processing
+    batch_size = max(1, len(work_items) // (NUM_WORKERS // 2))  # Dynamic batch size
+    batches = []
+    
+    for i in range(0, len(work_items), batch_size):
+        batch_indices = work_items[i:i + batch_size]
+        batch_data = [(frames_in_ram[idx], path) for idx, path in batch_indices]
+        batches.append(batch_data)
+    
+    # Use ThreadPoolExecutor with MORE threads for I/O heavy PNG writing
+    with ThreadPoolExecutor(max_workers=64) as executor:
+        # Flatten all write tasks
+        all_write_tasks = []
+        for batch in batches:
+            all_write_tasks.extend(batch)
+        
+        # Execute all writes in parallel
+        results = list(executor.map(write_frame_to_disk, all_write_tasks))
+        frames_written = sum(1 for r in results if r)
+    
+    # Cleanup
+    del frames_in_ram
+    del work_items
+    del batches
+    gc.collect()
+    
+    return f"✅ {video_path.name} - {frames_written} frames", frames_written
+
+
+def main():
+    """Main orchestration logic."""
+    print("="*60)
+    print("🚀 EXTREME RAM-BASED FRAME EXTRACTOR 🚀")
+    print("="*60)
+    print(f"   CPU Cores: {LOGICAL_PROCESSORS} | Workers: {NUM_WORKERS}")
+    print(f"   Concurrent Videos: {CONCURRENT_VIDEOS}")
+    print(f"   RAM Buffer: {RAM_BUFFER_GB} GB")
+    print(f"   I/O Threads per Worker: {IO_THREADS_PER_WORKER}")
+    print(f"   Resume Logic: ENABLED (checking all drives)")
+    print(f"   Source: {SOURCE_VIDEO_DIR}")
+    print(f"   New Output: {MAIN_OUTPUT_DIR}")
+    print(f"   Old Outputs: {', '.join(OLD_OUTPUT_DIRS)}")
+    print("="*60)
+
+    try:
+        set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass # Already set
+
+    if BOOST_PRIORITY and psutil:
+        try:
+            psutil.Process().nice(psutil.HIGH_PRIORITY_CLASS)
+        except Exception:
+            print("⚠️  Warning: Could not boost main process priority. Run as admin for best performance.")
+
+    source_dir = Path(SOURCE_VIDEO_DIR)
+    output_dir = Path(MAIN_OUTPUT_DIR)
+    old_output_dirs = [Path(d) for d in OLD_OUTPUT_DIRS] if OLD_OUTPUT_DIRS else []
+    
+    # Check if source directory exists
+    if not source_dir.exists():
+        print(f"❌ Error: Source directory not found: {source_dir}")
+        print(f"   Please check the SOURCE_VIDEO_DIR path in the script.")
+        return
+    
+    output_dir.mkdir(exist_ok=True, parents=True)
+    
+    # Check which old output directories exist
+    valid_old_dirs = []
+    for old_dir in old_output_dirs:
+        if old_dir.exists():
+            print(f"✅ Found old output directory: {old_dir}")
+            valid_old_dirs.append(old_dir)
+        else:
+            print(f"⚠️  Old output directory not found: {old_dir}")
+    
+    if not valid_old_dirs:
+        print(f"⚠️  No old output directories found - processing all videos")
+
+    video_files = [f for f in source_dir.iterdir() if f.suffix.lower() in VIDEO_EXTENSIONS]
+    if not video_files:
+        print("❌ No videos found to process. Exiting.")
+        return
+
+    print(f"Found {len(video_files)} videos to process.")
+    
+    # Prepare video info tuples for parallel processing (now includes all old_output_dirs)
+    video_tasks = [(video_path, output_dir, valid_old_dirs) for video_path in video_files]
+    
+    # Process multiple videos in parallel using a worker pool
+    total_frames = 0
+    with Pool(processes=CONCURRENT_VIDEOS, initializer=init_worker, maxtasksperchild=1) as pool:
+        with tqdm(total=len(video_tasks), desc="Processing Videos", unit="video") as pbar:
+            for result_msg, frames in pool.imap_unordered(process_single_video, video_tasks, chunksize=1):
+                total_frames += frames
+                tqdm.write(result_msg)
+                pbar.update(1)
+
+    print(f"\n🎉 All videos processed! Total frames: {total_frames:,}")
+
+if __name__ == "__main__":
+    main()
