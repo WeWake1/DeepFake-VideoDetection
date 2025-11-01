@@ -16,7 +16,7 @@ F:/
 H:/
 I:/
 
-# Large JSON files (optional - remove this line if you want to include mappings)
+# Large JSON files
 face_detection_results.json
 
 # Python
@@ -33,7 +33,7 @@ env/
 *.weights
 checkpoints/
 
-# Jupyter notebooks checkpoints
+# Jupyter notebooks
 .ipynb_checkpoints/
 
 # VS Code
