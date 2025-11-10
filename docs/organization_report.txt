@@ -1,0 +1,97 @@
+======================================================================
+WORKSPACE ORGANIZATION REPORT
+======================================================================
+Date: 2025-11-04 11:56:29
+Base Directory: J:\DF
+
+STRUCTURE OVERVIEW:
+----------------------------------------------------------------------
+ROOT (Production Code & Data):
+  ✓ train
+  ✓ config
+  ✓ docs
+  ✓ checkpoints
+  ✓ logs
+  ✓ DS
+  ✓ .venv
+  ✓ noco
+  ✓ requirements.txt
+  ✓ README.md
+  ✓ INSTALLATION.md
+  ✓ GPU_USAGE_GUIDE.md
+  ✓ TRAINING_MONITOR.md
+  ✓ training_pairs.csv
+  ✓ face_mapping.csv
+  ✓ frame_mapping.csv
+  ✓ enhanced_mapping.csv
+  ✓ real_to_fake_mapping.json
+  ✓ celebrity_mapping.json
+  ✓ face_detection_results.json
+  ✓ face_extraction_verification.json
+  ✓ .gitignore
+  ✓ .git
+
+ARCHIVE (Old/Experimental Code):
+  📁 archive/preprocessing/
+  📁 archive/experiments/
+  📁 archive/temporary_fixes/
+
+PAPER (Research Documentation):
+  📁 paper/methodology/
+    - architecture.md
+    - INSTALLATION.md
+    - README.md
+  📁 paper/results/
+    - best_model.pth
+    - training_log.csv
+  📁 paper/code_reference/
+    - dataset.py
+    - defaults.yaml
+    - inference.py
+    - models.py
+    - train.py
+  📁 paper/data_description/
+    - enhanced_mapping.csv
+    - frame_mapping.csv
+    - training_pairs.csv
+
+STAGED FOR DELETION:
+
+======================================================================
+FINAL STRUCTURE:
+======================================================================
+
+J:\DF/
+├── train/                      # Production training code
+├── config/                     # Configuration files
+├── docs/                       # Architecture documentation
+├── checkpoints/                # Trained models
+├── logs/                       # Training logs
+├── co/                         # Current preprocessing (final versions only)
+│   └── face_detect_mtcnn_gpu(final).py
+├── DS/                         # Dataset metadata
+├── FR/                         # Extracted frames
+├── archive/                    # OLD CODE (for reference)
+│   ├── preprocessing/          # Working older versions
+│   ├── experiments/            # Failed/experimental attempts
+│   └── temporary_fixes/        # One-off fix scripts
+├── paper/                      # RESEARCH PAPER MATERIALS
+│   ├── methodology/            # Architecture & training docs
+│   ├── results/                # Training logs & checkpoints
+│   ├── code_reference/         # Key implementation files
+│   └── data_description/       # Dataset information
+├── _to_delete/                 # REVIEW BEFORE DELETING
+├── *.csv                       # Dataset mappings
+├── *.json                      # Metadata files
+├── README.md                   # Main documentation
+├── requirements.txt            # Dependencies
+└── organization_report.txt     # This file
+
+WHAT TO DO FOR YOUR RESEARCH PAPER:
+1. Methodology section: Use files in paper/methodology/
+2. Results section: Use files in paper/results/
+3. Implementation details: Reference paper/code_reference/
+4. Dataset description: Use paper/data_description/
+5. Architecture diagrams: Generate from docs/architecture.md
+6. Training curves: Plot from logs/training_log.csv
+        

@@ -1,11 +1,36 @@
-torch==2.2.2 
-torchvision==0.17.2 
-facenet-pytorch==2.6.0 
-opencv-python==4.12.0.88 
-opencv-contrib-python==4.10.0.84 
-tensorflow==2.20.0 
-tf-keras 
-pillow==11.3.0 
-tqdm==4.67.1 
-numpy 
-pandas 
+# INSTALLATION INSTRUCTIONS:
+# 1. First install PyTorch with CUDA from PyTorch index:
+#    pip install --index-url https://download.pytorch.org/whl/cu121 torch==2.2.2+cu121 torchvision==0.17.2+cu121
+# 2. Then install facenet-pytorch WITHOUT dependencies:
+#    pip install --no-deps facenet-pytorch==2.6.0
+# 3. Then install remaining dependencies:
+#    pip install -r requirements.txt --no-deps torch torchvision facenet-pytorch
+
+# PyTorch (MUST install from PyTorch index with +cu121 - see instructions above)
+# torch==2.2.2+cu121
+# torchvision==0.17.2+cu121
+
+# Critical compatibility pins (locked to working versions)
+numpy==1.26.4
+pillow==10.2.0
+opencv-python==4.10.0.84
+opencv-contrib-python==4.10.0.84
+
+# Face detection
+facenet-pytorch==2.6.0
+requests
+
+# Optional (legacy preprocessing - not needed for training)
+tensorflow==2.20.0
+tf-keras
+
+# Utilities
+tqdm==4.67.1
+pandas
+psutil
+
+# Training dependencies
+efficientnet-pytorch>=0.7.1
+pyyaml>=6.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0

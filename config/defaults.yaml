@@ -1,0 +1,58 @@
+# Deepfake Detection Training Configuration
+
+# Data paths
+data:
+  real_path: "F:/real"                    # Base directory for real face images
+  fake_path: "F:/fake"                    # Base directory for fake face images
+  training_pairs: "training_pairs.csv"    # Path to training pairs CSV
+  frame_skip: 3                           # Frame stride (matches preprocessing)
+  sequence_length: 10                     # Number of frames per sequence (T)
+  train_split: 0.85                       # Fraction of data for training
+
+# Model architecture
+model:
+  hq_backbone: "efficientnet-b4"          # HQ stream backbone (224x224)
+  lq_backbone: "efficientnet-b0"          # LQ stream backbone (112x112)
+  convlstm_filters: [256, 128]            # ConvLSTM hidden dimensions
+  temporal_dim: 512                       # Temporal feature dimension
+  fusion_type: "attention"                # Fusion method (attention)
+  dropout: [0.5, 0.3]                     # Dropout rates for classifier
+  pretrained: true                        # Use ImageNet pretrained weights
+
+# Data preprocessing
+preprocessing:
+  hq_size: 224                            # HQ image resolution
+  lq_size: 112                            # LQ image resolution
+  lq_jpeg_quality: 75                     # JPEG quality for LQ compression
+  augmentation: true                      # Enable data augmentation
+
+# Training hyperparameters
+training:
+  batch_size: 16                          # Batch size (16 for 24GB VRAM, reduce to 12 if OOM)
+  epochs: 60                              # Maximum training epochs
+  learning_rate: 0.0001                   # Initial learning rate
+  weight_decay: 0.00001                   # L2 regularization
+  gradient_clip: 1.0                      # Gradient clipping threshold
+  early_stop_patience: 10                 # Early stopping patience (epochs)
+  num_workers: 8                          # DataLoader workers (8 for 72-core CPU)
+
+# Optimization
+optimization:
+  optimizer: "adam"                       # Optimizer (adam)
+  use_amp: true                           # Use automatic mixed precision
+  scheduler: "reduce_on_plateau"          # LR scheduler
+  scheduler_factor: 0.5                   # LR reduction factor
+  scheduler_patience: 3                   # Scheduler patience (epochs)
+  scheduler_min_lr: 0.000001              # Minimum learning rate
+
+# Output paths
+paths:
+  checkpoints: "checkpoints"              # Checkpoint save directory
+  logs: "logs"                            # Training logs directory
+  best_model: "checkpoints/best_model.pth"
+  last_model: "checkpoints/last_model.pth"
+
+# Hardware
+hardware:
+  device: "cuda"                          # Device (cuda or cpu)
+  seed: 42                                # Random seed for reproducibility

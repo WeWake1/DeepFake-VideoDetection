@@ -1,0 +1,95 @@
+======================================================================
+INTERESTING VIDEOS FOR MANUAL INSPECTION
+======================================================================
+
+HARDEST REAL VIDEOS (Lowest Confidence):
+----------------------------------------------------------------------
+1. id60_0001
+   Path: F:\real\id60_0001
+   Confidence: 0.5000
+
+2. id60_0001
+   Path: F:\real\id60_0001
+   Confidence: 0.5000
+
+3. id17_0000
+   Path: F:\real\id17_0000
+   Confidence: 0.9881
+
+4. id17_0000
+   Path: F:\real\id17_0000
+   Confidence: 0.9881
+
+5. id50_0009
+   Path: F:\real\id50_0009
+   Confidence: 0.9945
+
+
+HARDEST FAKE VIDEOS (Lowest Confidence):
+----------------------------------------------------------------------
+1. id60_id61_0001
+   Path: F:\fake\id60_id61_0001
+   Confidence: 0.5000
+
+2. id60_id5_0001
+   Path: F:\fake\id60_id5_0001
+   Confidence: 0.5000
+
+3. id60_id59_0001
+   Path: F:\fake\id60_id59_0001
+   Confidence: 0.5000
+
+4. id53_id57_0005
+   Path: F:\fake\id53_id57_0005
+   Confidence: 0.9869
+
+5. id54_id51_0009
+   Path: F:\fake\id54_id51_0009
+   Confidence: 0.9965
+
+
+EASIEST REAL VIDEOS (Highest Confidence):
+----------------------------------------------------------------------
+1. id28_0007
+   Path: F:\real\id28_0007
+   Confidence: 1.0000
+
+2. id54_0001
+   Path: F:\real\id54_0001
+   Confidence: 1.0000
+
+3. id54_0001
+   Path: F:\real\id54_0001
+   Confidence: 1.0000
+
+4. id54_0001
+   Path: F:\real\id54_0001
+   Confidence: 1.0000
+
+5. id54_0002
+   Path: F:\real\id54_0002
+   Confidence: 1.0000
+
+
+EASIEST FAKE VIDEOS (Highest Confidence):
+----------------------------------------------------------------------
+1. id8_id2_0003
+   Path: F:\fake\id8_id2_0003
+   Confidence: 1.0000
+
+2. id8_id0_0003
+   Path: F:\fake\id8_id0_0003
+   Confidence: 1.0000
+
+3. id60_id5_0005
+   Path: F:\fake\id60_id5_0005
+   Confidence: 1.0000
+
+4. id55_id57_0001
+   Path: F:\fake\id55_id57_0001
+   Confidence: 1.0000
+
+5. id8_id5_0008
+   Path: F:\fake\id8_id5_0008
+   Confidence: 1.0000
+
