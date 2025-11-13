@@ -12,7 +12,7 @@ from efficientnet_pytorch import EfficientNet
 class SpatialCNN(nn.Module):
     """
     Spatial feature extractor using EfficientNet backbone.
-    Processes each frame independently to extract spatial features.
+    Processes each frame independently to extract spatial features. 
     """
     
     def __init__(self, model_name='efficientnet-b4', pretrained=True, freeze_early_layers=False):
