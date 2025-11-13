@@ -1,6 +1,6 @@
 """
-Run inference on DFDC dataset
-Evaluates trained model on DFDC test videos
+Run inference on DFD (Google/Jigsaw) dataset
+Evaluates trained model on DFD test videos
 """
 import sys
 import os
@@ -20,11 +20,11 @@ from utils import load_checkpoint
 # ===== CONFIGURATION =====
 MODEL_PATH = r"j:\DF\checkpoints\model_alpha_celeb_only.pth"
 CONFIG_PATH = r"j:\DF\config\defaults.yaml"
-TEST_CSV = r"j:\DF\evaluation\dfdc\dfdc_test_videos_ready.csv"  # Only videos with faces
-OUTPUT_CSV = r"j:\DF\evaluation\dfdc\dfdc_results.csv"
+TEST_CSV = r"j:\DF\evaluation\dfd\dfd_test_videos_ready.csv"
+OUTPUT_CSV = r"j:\DF\evaluation\dfd\dfd_results.csv"
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-BATCH_SIZE = 1  # Process one video at a time
+BATCH_SIZE = 1
 
 def load_model_and_config():
     """Load trained model and configuration"""
@@ -56,10 +56,10 @@ def load_model_and_config():
     
     return model, config
 
-def run_inference_on_dfdc():
-    """Run inference on all DFDC test videos"""
+def run_inference_on_dfd():
+    """Run inference on DFD test videos"""
     print("="*70)
-    print("🎯 DFDC INFERENCE")
+    print("🎯 DFD INFERENCE")
     print("="*70)
     print(f"   Model: {MODEL_PATH}")
     print(f"   Test CSV: {TEST_CSV}")
@@ -86,6 +86,7 @@ def run_inference_on_dfdc():
         for idx, row in tqdm(test_df.iterrows(), total=len(test_df), desc="Processing"):
             video_name = row['video_name']
             true_label = row['label']
+            folder = row['folder']
             faces_path = row['faces_path']
             
             try:
@@ -100,6 +101,7 @@ def run_inference_on_dfdc():
                 results.append({
                     'video_name': video_name,
                     'true_label': true_label,
+                    'folder': folder,
                     'predicted_label': prediction,
                     'confidence': confidence,
                     'num_frames': num_frames,
@@ -111,6 +113,7 @@ def run_inference_on_dfdc():
                 results.append({
                     'video_name': video_name,
                     'true_label': true_label,
+                    'folder': folder,
                     'predicted_label': 'error',
                     'confidence': 0.5,
                     'num_frames': 0,
@@ -125,7 +128,7 @@ def run_inference_on_dfdc():
     
     # Calculate metrics
     print("\n" + "="*70)
-    print("📊 DFDC TEST RESULTS")
+    print("📊 DFD TEST RESULTS")
     print("="*70)
     
     successful = results_df[results_df['status'] == 'success']
@@ -176,4 +179,4 @@ def run_inference_on_dfdc():
     return results_df
 
 if __name__ == "__main__":
-    run_inference_on_dfdc()
+    run_inference_on_dfd()

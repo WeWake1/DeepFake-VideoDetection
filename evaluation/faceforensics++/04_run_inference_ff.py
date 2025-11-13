@@ -1,6 +1,6 @@
 """
-Run inference on DFDC dataset
-Evaluates trained model on DFDC test videos
+Run inference on FaceForensics++ dataset
+Evaluates trained model on FF++ test videos
 """
 import sys
 import os
@@ -20,11 +20,11 @@ from utils import load_checkpoint
 # ===== CONFIGURATION =====
 MODEL_PATH = r"j:\DF\checkpoints\model_alpha_celeb_only.pth"
 CONFIG_PATH = r"j:\DF\config\defaults.yaml"
-TEST_CSV = r"j:\DF\evaluation\dfdc\dfdc_test_videos_ready.csv"  # Only videos with faces
-OUTPUT_CSV = r"j:\DF\evaluation\dfdc\dfdc_results.csv"
+TEST_CSV = r"j:\DF\evaluation\faceforensics++\ff_test_videos_ready.csv"
+OUTPUT_CSV = r"j:\DF\evaluation\faceforensics++\ff_results.csv"
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-BATCH_SIZE = 1  # Process one video at a time
+BATCH_SIZE = 1
 
 def load_model_and_config():
     """Load trained model and configuration"""
@@ -56,10 +56,10 @@ def load_model_and_config():
     
     return model, config
 
-def run_inference_on_dfdc():
-    """Run inference on all DFDC test videos"""
+def run_inference_on_ff():
+    """Run inference on FaceForensics++ test videos"""
     print("="*70)
-    print("🎯 DFDC INFERENCE")
+    print("🎯 FACEFORENSICS++ INFERENCE")
     print("="*70)
     print(f"   Model: {MODEL_PATH}")
     print(f"   Test CSV: {TEST_CSV}")
@@ -78,6 +78,12 @@ def run_inference_on_dfdc():
     print(f"   Real: {(test_df['label'] == 'real').sum()}")
     print(f"   Fake: {(test_df['label'] == 'fake').sum()}")
     
+    # Show manipulation breakdown
+    print("\n   By manipulation method:")
+    for method in test_df['manipulation'].unique():
+        count = (test_df['manipulation'] == method).sum()
+        print(f"      {method}: {count}")
+    
     # Run inference
     results = []
     
@@ -86,6 +92,7 @@ def run_inference_on_dfdc():
         for idx, row in tqdm(test_df.iterrows(), total=len(test_df), desc="Processing"):
             video_name = row['video_name']
             true_label = row['label']
+            manipulation = row['manipulation']
             faces_path = row['faces_path']
             
             try:
@@ -100,6 +107,7 @@ def run_inference_on_dfdc():
                 results.append({
                     'video_name': video_name,
                     'true_label': true_label,
+                    'manipulation': manipulation,
                     'predicted_label': prediction,
                     'confidence': confidence,
                     'num_frames': num_frames,
@@ -111,6 +119,7 @@ def run_inference_on_dfdc():
                 results.append({
                     'video_name': video_name,
                     'true_label': true_label,
+                    'manipulation': manipulation,
                     'predicted_label': 'error',
                     'confidence': 0.5,
                     'num_frames': 0,
@@ -125,7 +134,7 @@ def run_inference_on_dfdc():
     
     # Calculate metrics
     print("\n" + "="*70)
-    print("📊 DFDC TEST RESULTS")
+    print("📊 FACEFORENSICS++ TEST RESULTS")
     print("="*70)
     
     successful = results_df[results_df['status'] == 'success']
@@ -157,6 +166,14 @@ def run_inference_on_dfdc():
         print(f"   Fake Correct: {fake_correct}/{len(fake_vids)}")
         print(f"   Fake Accuracy: {fake_acc:.2f}%")
         
+        # Accuracy by manipulation method
+        print(f"\n   Accuracy by manipulation method:")
+        for method in successful['manipulation'].unique():
+            method_df = successful[successful['manipulation'] == method]
+            method_correct = (method_df['true_label'] == method_df['predicted_label']).sum()
+            method_acc = method_correct / len(method_df) * 100
+            print(f"      {method:20s}: {method_acc:6.2f}% ({method_correct}/{len(method_df)})")
+        
         # Confidence statistics
         print(f"\n   Confidence Statistics:")
         print(f"   Mean: {successful['confidence'].mean():.4f}")
@@ -169,11 +186,11 @@ def run_inference_on_dfdc():
         if len(errors) > 0:
             print(f"\n   ⚠️  Misclassified videos ({len(errors)}):")
             for _, err in errors.head(10).iterrows():
-                print(f"      - {err['video_name']}: true={err['true_label']}, pred={err['predicted_label']}, conf={err['confidence']:.4f}")
+                print(f"      - {err['video_name']}: true={err['true_label']}, pred={err['predicted_label']}, method={err['manipulation']}, conf={err['confidence']:.4f}")
         
     print("="*70)
     
     return results_df
 
 if __name__ == "__main__":
-    run_inference_on_dfdc()
+    run_inference_on_ff()

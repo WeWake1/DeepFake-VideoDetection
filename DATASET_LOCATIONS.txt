@@ -1,0 +1,416 @@
+================================================================================
+DEEPFAKE DETECTION - DATASET LOCATIONS
+================================================================================
+Last Updated: November 13, 2025
+
+================================================================================
+1. CELEB-DF DATASET (Current/Original)
+================================================================================
+Location: F:\
+Structure:
+  - F:\real\          → Real face sequences (518 videos)
+  - F:\fake\          → Fake face sequences (5,639 videos)
+  
+Total Videos: 6,157
+- Real: 518 videos
+- Fake: 5,639 videos
+
+Training Split:
+- Training: ~4,793 videos (85% of 5,639)
+- Validation: ~846 videos (15% of 5,639)
+- Test: 518 videos (from List_of_testing_videos.txt)
+
+Test Results:
+- Model A (Celeb-DF only): 100% accuracy on 518 test videos
+- Trained on: ~5,639 videos (excluding test set)
+
+Notes:
+- Already preprocessed (frames extracted, faces detected)
+- Test list: j:\DF\dataset\List_of_testing_videos.txt
+- Face images: 224x224 JPG format
+
+
+================================================================================
+2. DFDC DATASET (Deep Fake Detection Challenge)
+================================================================================
+Location: 
+  - Raw Videos: C:\Users\Administrater\Downloads\deepfake-detection-challenge\train_sample_videos
+  - Extracted Frames: H:\DFDC\frames\
+  - Detected Faces: F:\DFDC\faces\
+
+Total Videos: 400 (Part 11 only)
+- Real: 77 videos
+- Fake: 323 videos
+- Testable (with faces): 384 videos
+
+Metadata: metadata.json (labels included)
+
+Test Results:
+- Model A (Celeb-DF only): 34.64% overall accuracy
+  - Real Accuracy: 98.68% (75/76)
+  - Fake Accuracy: 18.83% (58/308)
+
+Workspace Folder: j:\DF\evaluation\dfdc\
+- 01_extract_frames_dfdc.py
+- 02_detect_faces_dfdc.py
+- 03_parse_metadata.py
+- 04_run_inference.py
+- dfdc_test_videos_ready.csv
+- dfdc_results.csv
+
+Notes:
+- Already preprocessed (frames extracted, faces detected)
+- Shows poor cross-dataset generalization
+- Used as separate test set for Model B evaluation
+
+
+================================================================================
+3. FACEFORENSICS++ DATASET (FF++)
+================================================================================
+Location: F:\F++ Dataset\FaceForensics++_C23\
+
+Total Videos: 7,000 mp4 files
+Structure:
+  - original/                    → 1,000 real videos (YouTube)
+  - Deepfakes/                   → 1,000 fake videos (Deepfakes method)
+  - Face2Face/                   → 1,000 fake videos (Face2Face method)
+  - FaceSwap/                    → 1,000 fake videos (FaceSwap method)
+  - NeuralTextures/              → 1,000 fake videos (NeuralTextures method)
+  - FaceShifter/                 → 1,000 fake videos (FaceShifter method)
+  - DeepFakeDetection/           → 1,000 fake videos (DFD method)
+  - csv/                         → Metadata files
+
+Video Count Breakdown:
+- Real: 1,000 videos (original folder)
+- Fake: 6,000 videos (6 different manipulation methods × 1,000 each)
+
+Manipulation Methods: 
+- Deepfakes (face replacement using autoencoders)
+- Face2Face (facial reenactment)
+- FaceSwap (traditional face swapping)
+- NeuralTextures (texture synthesis)
+- FaceShifter (high quality face swapping)
+- DeepFakeDetection (from DFD dataset)
+
+Compression: c23 (compressed version, lower file size)
+
+DFD Naming Pattern: 
+- Actor ID format: 01, 02, 03... 28 (different actors)
+- Scene format: exit_phone_room, kitchen_pan, walking_outside_cafe_disgusted, etc.
+- Manipulation ID: Random hash codes (3VP8836C, UIQG2RF4, etc.)
+- Example: "18_06__walking_down_street_outside_angry__MVXBDKGB.mp4"
+  - 18 = source actor, 06 = target actor, scene name, manipulation hash
+
+Status: DOWNLOADED - Ready for preprocessing
+
+Notes:
+- Gold standard benchmark dataset
+- Most cited in deepfake detection papers
+- Need to preprocess (extract frames, detect faces)
+- Can use all 6 fake methods or select subset
+- For training: Recommend using 1-2 methods (Deepfakes + Face2Face) to avoid overwhelming
+
+
+================================================================================
+4. DFD DATASET (Deep Fake Detection - Google/Jigsaw)
+================================================================================
+Location: H:\DFD Dataset\
+
+Total Videos: 3,431 mp4 files
+Structure:
+  - DFD_original sequences/      → 363 real videos (original actors)
+  - DFD_manipulated_sequences/
+    └─ DFD_manipulated_sequences/  → 3,068 fake videos (face-swapped versions)
+
+Video Count Breakdown:
+- Real: 363 videos (original sequences)
+- Fake: 3,068 videos (manipulated sequences)
+
+Actor Count: 28 actors (ID: 01 through 28)
+
+Scenarios per Actor: ~13-16 videos each
+- Scene types: exit_phone_room, hugging_happy, kitchen_pan, kitchen_still, 
+  meeting_serious, outside_talking_pan_laughing, podium_speech_happy, 
+  secret_conversation, talking_against_wall, talking_angry_couch, 
+  walking_and_outside_surprised, walking_down_indoor_hall_disgust, etc.
+
+Naming Pattern:
+- Real: "01__exit_phone_room.mp4", "02__kitchen_pan.mp4"
+- Fake: "18_06__walking_down_street_outside_angry__MVXBDKGB.mp4"
+  - Format: SOURCE_TARGET__SCENE__HASH.mp4
+  - 18 = source actor performing, 06 = target face swapped onto
+  - Multiple fakes per real video (different target faces)
+
+Status: DOWNLOADED - Ready for preprocessing
+
+Notes:
+- Google/Jigsaw official dataset (2019)
+- High quality controlled recordings
+- Multiple emotional scenarios per actor
+- Need to preprocess (extract frames, detect faces)
+- Heavily imbalanced: 363 real vs 3,068 fake (~1:8.5 ratio)
+
+
+================================================================================
+MULTI-DATASET TRAINING PLAN
+================================================================================
+
+Target: Train Model B on all datasets combined
+
+Standard Split Ratios:
+- Training: 70% (for learning patterns)
+- Validation: 15% (for hyperparameter tuning, early stopping)
+- Test: 15% (for final evaluation, never seen during training)
+
+Alternative Split (for larger datasets):
+- Training: 80%
+- Validation: 10%
+- Test: 10%
+
+**RECOMMENDED SPLIT: 70/15/15** (more conservative, better for ~10K videos)
+
+================================================================================
+COMPLETE DATASET INVENTORY
+================================================================================
+
+1. Celeb-DF:
+   - Total: 6,157 videos (518 real, 5,639 fake)
+   - Current test set: 518 videos (kept separate for comparison)
+   - Available for training: 5,639 videos
+
+2. DFDC:
+   - Total: 384 videos with faces (76 real, 308 fake)
+   - Already tested: 384 videos
+   - Can use: 384 videos (as additional test OR include in training)
+
+3. FaceForensics++ (FF++):
+   - Total: 7,000 videos (1,000 real, 6,000 fake across 6 methods)
+   - Real: 1,000 videos
+   - Fake methods to choose:
+     * Option A: Use 2 methods (Deepfakes + Face2Face) = 2,000 fake videos
+     * Option B: Use all 6 methods = 6,000 fake videos
+   - **RECOMMENDED: Option A (3,000 videos total from FF++)**
+   
+4. DFD:
+   - Total: 3,431 videos (363 real, 3,068 fake)
+   - All usable
+
+================================================================================
+TRAINING STRATEGY OPTIONS
+================================================================================
+
+**OPTION 1: Moderate Size (RECOMMENDED)**
+Datasets: Celeb-DF + FF++ (2 methods) + DFD
+- Celeb-DF: 5,639 videos (use training portion, keep 518 test separate)
+- FF++ (Deepfakes + Face2Face only): 3,000 videos (1,000 real, 2,000 fake)
+- DFD: 3,431 videos (363 real, 3,068 fake)
+- **Total: 12,070 videos**
+  - Real: 1,881 videos (~15.6%)
+  - Fake: 10,189 videos (~84.4%)
+
+Split (70/15/15):
+- Train: 8,449 videos
+- Val: 1,810 videos
+- Test: 1,811 videos
+- **Plus Celeb-DF separate test: 518 videos**
+- **Plus DFDC separate test: 384 videos**
+
+Training time: 20-25 hours
+
+**OPTION 2: Large Size (Most Comprehensive)**
+Datasets: Celeb-DF + FF++ (all methods) + DFD
+- Celeb-DF: 5,639 videos
+- FF++ (all 6 methods): 7,000 videos (1,000 real, 6,000 fake)
+- DFD: 3,431 videos (363 real, 3,068 fake)
+- **Total: 16,070 videos**
+  - Real: 1,881 videos (~11.7%)
+  - Fake: 14,189 videos (~88.3%)
+
+Split (70/15/15):
+- Train: 11,249 videos
+- Val: 2,410 videos
+- Test: 2,411 videos
+- **Plus Celeb-DF separate test: 518 videos**
+- **Plus DFDC separate test: 384 videos**
+
+Training time: 30-40 hours
+
+**OPTION 3: Smaller Size (Faster)**
+Datasets: Celeb-DF + FF++ (Deepfakes only)
+- Celeb-DF: 5,639 videos
+- FF++ (Deepfakes only): 2,000 videos (1,000 real, 1,000 fake)
+- **Total: 7,639 videos**
+
+Split (70/15/15):
+- Train: 5,347 videos
+- Val: 1,146 videos
+- Test: 1,146 videos
+- **Plus Celeb-DF separate test: 518 videos**
+- **Plus DFDC separate test: 384 videos**
+- **Plus DFD separate test: 3,431 videos**
+
+Training time: 12-18 hours
+
+================================================================================
+DATASET BALANCE STRATEGY
+================================================================================
+
+Issue: All datasets are heavily imbalanced (more fakes than reals)
+- Celeb-DF: 1:10.9 (518 real : 5,639 fake)
+- DFDC: 1:4.1 (76 real : 308 fake)
+- FF++: 1:6 (1,000 real : 6,000 fake if using all methods)
+- DFD: 1:8.5 (363 real : 3,068 fake)
+
+Solutions:
+1. **Class weights in loss function** (RECOMMENDED)
+   - Assign higher weight to real class during training
+   - Loss = class_weight[real] * loss_real + class_weight[fake] * loss_fake
+   
+2. **Balanced sampling** (Alternative)
+   - Sample equal number of real/fake per batch
+   - Each epoch sees all fakes but real videos repeated
+
+3. **Data augmentation for real class**
+   - Apply heavier augmentation to real videos
+   - Increases effective real samples
+
+**RECOMMENDED: Use class weights + data augmentation**
+
+
+================================================================================
+FINAL DECISION: USE ALL VIDEOS FROM ALL DATASETS
+================================================================================
+
+**SELECTED: Option 2 - Large Size (Most Comprehensive)**
+
+Datasets Included:
+- Celeb-DF: 5,639 videos (518 test set kept separate)
+- FaceForensics++: 7,000 videos (ALL 6 manipulation methods)
+- DFD: 3,431 videos (all videos)
+
+**TOTAL TRAINING POOL: 16,070 videos**
+- Real: 1,881 videos (11.7%)
+- Fake: 14,189 videos (88.3%)
+
+Split (70/15/15):
+- Train: 11,249 videos
+- Validation: 2,410 videos
+- Test: 2,411 videos
+
+Separate Test Sets (for cross-dataset evaluation):
+- Celeb-DF: 518 videos (Model A baseline: 100%)
+- DFDC: 384 videos (Model A baseline: 34.64%)
+
+**Training Time Estimate: 30-40 hours**
+**Storage Required: ~1 TB**
+
+================================================================================
+EXECUTION PLAN
+================================================================================
+
+1. ✅ Dataset exploration (COMPLETED)
+
+2. Create evaluation folder structure:
+   - j:\DF\evaluation\dfdc\ (already exists, rename from "eval-1")
+   - j:\DF\evaluation\faceforensics++\
+   - j:\DF\evaluation\dfd\
+
+3. Create preprocessing pipeline for FaceForensics++:
+   - 01_extract_frames_ff.py (extract every 3rd frame)
+   - 02_detect_faces_ff.py (MTCNN GPU detection)
+   - 03_parse_metadata_ff.py (create labels CSV)
+   - Output to: H:\FF++\frames\ and H:\FF++\faces\
+   
+4. Create preprocessing pipeline for DFD:
+   - 01_extract_frames_dfd.py (extract every 3rd frame)
+   - 02_detect_faces_dfd.py (MTCNN GPU detection)
+   - 03_parse_metadata_dfd.py (create labels CSV)
+   - Output to: H:\DFD\frames\ and H:\DFD\faces\
+
+5. Preprocess FaceForensics++ (ALL 6 methods):
+   - Process: original/ (1,000 real)
+   - Process: Deepfakes/ (1,000 fake)
+   - Process: Face2Face/ (1,000 fake)
+   - Process: FaceSwap/ (1,000 fake)
+   - Process: NeuralTextures/ (1,000 fake)
+   - Process: FaceShifter/ (1,000 fake)
+   - Process: DeepFakeDetection/ (1,000 fake)
+   - Estimated time: 12-18 hours
+   
+6. Preprocess DFD:
+   - Process: DFD_original sequences/ (363 real)
+   - Process: DFD_manipulated_sequences/ (3,068 fake)
+   - Estimated time: 8-12 hours
+
+7. Create combined dataset CSV:
+   - Merge: Celeb-DF (5,639) + FF++ (7,000) + DFD (3,431)
+   - Calculate class weights: real_weight = 14,189/1,881 ≈ 7.54
+   - Stratified split (70/15/15):
+     * Train: 11,249 videos
+     * Val: 2,410 videos
+     * Test: 2,411 videos
+   - Output: j:\DF\dataset\multi_dataset_train.csv
+   - Output: j:\DF\dataset\multi_dataset_val.csv
+   - Output: j:\DF\dataset\multi_dataset_test.csv
+
+8. Update training configuration:
+   - Config file: j:\DF\config\multi_dataset_config.yaml
+   - Add class weights to loss function
+   - Update data paths (3 face directories)
+   - Epochs: 60-100
+   - Checkpoint: j:\DF\checkpoints\multi_dataset_model.pth
+
+9. Train Model B:
+   - Run: python train/train.py --config config/multi_dataset_config.yaml
+   - Expected time: 30-40 hours
+   - Save best model separately
+   - Do NOT overwrite Model A
+
+10. Comprehensive evaluation:
+    - Test Model B on Celeb-DF (518 videos) - compare with Model A (100%)
+    - Test Model B on DFDC (384 videos) - compare with Model A (34.64%)
+    - Test Model B on FF++ test subset
+    - Test Model B on DFD test subset
+    - Generate comparison tables
+
+11. Analysis and paper writing:
+    - Document cross-dataset performance
+    - Compare Model A vs Model B
+    - Discuss specialization vs generalization trade-off
+
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+- Model A checkpoint: j:\DF\checkpoints\best_model.pth (Celeb-DF only, 100% on 518 test videos)
+- Keep Model A separate - DO NOT overwrite
+- Model B will be saved to: j:\DF\checkpoints/multi_dataset_model.pth
+- All preprocessing separate from current Celeb-DF data
+- Document all preprocessing steps
+- Track dataset statistics carefully
+
+================================================================================
+DISK SPACE REQUIREMENTS (ESTIMATED)
+================================================================================
+
+Frames (PNG):
+- FF++ (3,000 videos): ~300-400 GB
+- DFD (3,431 videos): ~350-450 GB
+Total frames: ~700-850 GB
+
+Faces (JPG 224x224):
+- FF++ (3,000 videos): ~120-150 GB
+- DFD (3,431 videos): ~140-170 GB
+Total faces: ~260-320 GB
+
+**Total additional storage needed: ~1 TB**
+
+Current usage:
+- Celeb-DF faces: F:\real\ + F:\fake\
+- DFDC faces: F:\EVAL - 1 (FRAMES)\
+
+Recommended new locations:
+- FF++ frames: H:\FF++_frames\
+- FF++ faces: H:\FF++_faces\
+- DFD frames: H:\DFD_frames\
+- DFD faces: H:\DFD_faces\

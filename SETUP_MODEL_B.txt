@@ -1,0 +1,163 @@
+================================================================================
+MODEL B SETUP - CHANGES AND NEXT STEPS
+================================================================================
+Date: November 13, 2025
+
+================================================================================
+CHANGES MADE TO PREPROCESSING SCRIPTS
+================================================================================
+
+1. DFD PREPROCESSING SCRIPTS (evaluation/dfd/)
+   ✅ Updated: 01_extract_frames_dfd.py
+      - OUTPUT: F:\DFD_preprocessed\frames\
+   
+   ✅ Updated: 02_detect_faces_dfd.py
+      - INPUT:  F:\DFD_preprocessed\frames\
+      - OUTPUT: F:\DFD_preprocessed\faces\
+   
+   ✅ Updated: 03_parse_metadata_dfd.py
+      - INPUT:  F:\DFD_preprocessed\faces\
+
+2. FACEFORENSICS++ PREPROCESSING SCRIPTS (evaluation/faceforensics++/)
+   ✅ Updated: 01_extract_frames_ff.py
+      - OUTPUT: F:\FF++_preprocessed\frames\
+   
+   ✅ Updated: 02_detect_faces_ff.py
+      - INPUT:  F:\FF++_preprocessed\frames\
+      - OUTPUT: F:\FF++_preprocessed\faces\
+   
+   ✅ Updated: 03_parse_metadata_ff.py
+      - INPUT:  F:\FF++_preprocessed\faces\
+
+================================================================================
+MANUAL STEPS REQUIRED - RENAME MODEL A CHECKPOINTS
+================================================================================
+
+You need to manually rename the checkpoints in: J:\DF\checkpoints\
+
+Current names → New names:
+1. best_model.pth  →  model_alpha_celeb_only.pth
+2. last_model.pth  →  last_model_alpha_celeb_only.pth
+
+Commands to run in cmd:
+-----------------------
+cd J:\DF\checkpoints
+ren best_model.pth model_alpha_celeb_only.pth
+ren last_model.pth last_model_alpha_celeb_only.pth
+
+================================================================================
+FILES THAT REFERENCE THE OLD CHECKPOINT NAME
+================================================================================
+
+After renaming, these files will need updates:
+
+1. config/defaults.yaml
+   Line: best_model: "checkpoints/best_model.pth"
+   Change to: best_model: "checkpoints/model_alpha_celeb_only.pth"
+
+2. evaluation/dfdc/04_run_inference.py
+   Line: MODEL_PATH = r"j:\DF\checkpoints\best_model.pth"
+   Change to: MODEL_PATH = r"j:\DF\checkpoints\model_alpha_celeb_only.pth"
+
+3. evaluation/faceforensics++/04_run_inference_ff.py
+   Line: MODEL_PATH = r"j:\DF\checkpoints\best_model.pth"
+   Change to: MODEL_PATH = r"j:\DF\checkpoints\model_alpha_celeb_only.pth"
+
+4. evaluation/dfd/04_run_inference_dfd.py
+   Line: MODEL_PATH = r"j:\DF\checkpoints\best_model.pth"
+   Change to: MODEL_PATH = r"j:\DF\checkpoints\model_alpha_celeb_only.pth"
+
+I can update these automatically after you rename the checkpoint files.
+
+================================================================================
+NEW FOLDER STRUCTURE FOR MODEL B
+================================================================================
+
+To be created:
+
+j:\DF\
+  ├── train_model_b\              (NEW - Model B training scripts)
+  │   ├── train_model_b.py        (copy from train/train.py, modified)
+  │   └── README.txt              (Model B training notes)
+  │
+  ├── config\
+  │   ├── defaults.yaml           (Model Alpha config)
+  │   └── model_b_config.yaml     (NEW - Model B config)
+  │
+  └── checkpoints\
+      ├── model_alpha_celeb_only.pth      (Renamed from best_model.pth)
+      ├── last_model_alpha_celeb_only.pth (Renamed from last_model.pth)
+      └── (Model B checkpoints will go here during training)
+
+================================================================================
+READY TO RUN - DFD PREPROCESSING
+================================================================================
+
+Once you rename the checkpoints, you can start DFD preprocessing:
+
+Step 1: Frame Extraction (6-8 hours)
+-------------------------------------
+cd j:\DF
+python evaluation\dfd\01_extract_frames_dfd.py
+
+Expected output:
+- F:\DFD_preprocessed\frames\original_videos\     (363 video folders)
+- F:\DFD_preprocessed\frames\manipulated_videos\  (3,068 video folders)
+
+Step 2: Face Detection (2-4 hours)
+-----------------------------------
+python evaluation\dfd\02_detect_faces_dfd.py
+
+Expected output:
+- F:\DFD_preprocessed\faces\original_videos\      (363 video folders with faces)
+- F:\DFD_preprocessed\faces\manipulated_videos\   (3,068 video folders with faces)
+
+Step 3: Metadata Parsing (< 1 minute)
+--------------------------------------
+python evaluation\dfd\03_parse_metadata_dfd.py
+
+Expected output:
+- j:\DF\evaluation\dfd\dfd_test_videos.csv
+- j:\DF\evaluation\dfd\dfd_test_videos_ready.csv
+
+================================================================================
+TOTAL STORAGE REQUIRED
+================================================================================
+
+DFD Dataset:
+- Frames (PNG):  ~350-450 GB  → F:\DFD_preprocessed\frames\
+- Faces (JPG):   ~140-170 GB  → F:\DFD_preprocessed\faces\
+- Total DFD:     ~500-600 GB
+
+FF++ Dataset (when ready):
+- Frames (PNG):  ~300-400 GB  → F:\FF++_preprocessed\frames\
+- Faces (JPG):   ~120-150 GB  → F:\FF++_preprocessed\faces\
+- Total FF++:    ~450-550 GB
+
+TOTAL NEW STORAGE: ~1 TB on F:\ drive
+
+================================================================================
+NEXT STEPS AFTER RENAMING CHECKPOINTS
+================================================================================
+
+1. Rename checkpoint files (commands above)
+2. Tell me when done, I'll update all script references
+3. Start DFD preprocessing (run commands above)
+4. While DFD is processing, I'll create Model B folder structure
+5. After preprocessing completes, create combined dataset CSV
+6. Update Model B training configuration
+7. Start Model B training (30-40 hours)
+
+================================================================================
+QUESTIONS TO CONFIRM
+================================================================================
+
+Before proceeding, please confirm:
+
+1. ✅ DFD output location: F:\DFD_preprocessed\  (CONFIRMED)
+2. ✅ FF++ output location: F:\FF++_preprocessed\  (CONFIRMED)
+3. ✅ Model Alpha name: model_alpha_celeb_only.pth  (CONFIRMED)
+4. ❓ Model B folder name: train_model_b\  (OK?)
+5. ❓ Model B config name: model_b_config.yaml  (OK?)
+
+================================================================================

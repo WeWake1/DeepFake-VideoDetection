@@ -1,0 +1,188 @@
+================================================================================
+MULTI-DATASET PREPROCESSING PLAN
+================================================================================
+Created: November 13, 2025
+Status: READY TO START
+
+================================================================================
+OVERVIEW
+================================================================================
+
+Goal: Preprocess FaceForensics++ and DFD datasets for multi-dataset training
+
+Datasets to Preprocess:
+1. FaceForensics++ (FF++): 7,000 videos → H:\FF++\
+2. DFD (Google): 3,431 videos → H:\DFD\
+
+Already Preprocessed:
+- Celeb-DF: 6,157 videos (F:\real\ + F:\fake\)
+- DFDC: 384 videos (F:\DFDC\faces\)
+
+================================================================================
+FOLDER STRUCTURE
+================================================================================
+
+Evaluation folders (scripts and results):
+- j:\DF\evaluation\dfdc\              ✅ EXISTS (already set up)
+- j:\DF\evaluation\faceforensics++\   ✅ CREATED
+- j:\DF\evaluation\dfd\               ✅ CREATED
+
+Output folders (frames and faces):
+- H:\FF++\frames\                     ⏳ TO BE CREATED
+- H:\FF++\faces\                      ⏳ TO BE CREATED
+- H:\DFD\frames\                      ⏳ TO BE CREATED
+- H:\DFD\faces\                       ⏳ TO BE CREATED
+
+================================================================================
+PREPROCESSING SCRIPTS TO CREATE
+================================================================================
+
+FaceForensics++ Scripts (evaluation/faceforensics++/):
+1. 01_extract_frames_ff.py
+   - Input: F:\F++ Dataset\FaceForensics++_C23\
+   - Output: H:\FF++\frames\
+   - Process all 7 folders (original + 6 fake methods)
+   - Frame skip: 3 (every 3rd frame)
+   
+2. 02_detect_faces_ff.py
+   - Input: H:\FF++\frames\
+   - Output: H:\FF++\faces\
+   - MTCNN GPU detection
+   - 224×224 face images
+   
+3. 03_parse_metadata_ff.py
+   - Create labels CSV
+   - Map videos to real/fake labels
+   - Output: ff_videos_ready.csv
+
+4. 04_run_inference_ff.py (optional - for testing Model B)
+   - Test Model B on FF++ test set
+   - Generate accuracy metrics
+
+DFD Scripts (evaluation/dfd/):
+1. 01_extract_frames_dfd.py
+   - Input: H:\DFD Dataset\
+   - Output: H:\DFD\frames\
+   - Process both real and fake folders
+   - Frame skip: 3
+   
+2. 02_detect_faces_dfd.py
+   - Input: H:\DFD\frames\
+   - Output: H:\DFD\faces\
+   - MTCNN GPU detection
+   - 224×224 face images
+   
+3. 03_parse_metadata_dfd.py
+   - Create labels CSV
+   - Parse actor IDs and scenarios
+   - Output: dfd_videos_ready.csv
+
+4. 04_run_inference_dfd.py (optional - for testing Model B)
+   - Test Model B on DFD test set
+   - Generate accuracy metrics
+
+================================================================================
+PREPROCESSING TIMELINE
+================================================================================
+
+FaceForensics++:
+- Frame extraction: 8-12 hours (7,000 videos)
+- Face detection: 4-6 hours (GPU accelerated)
+- Total: 12-18 hours
+
+DFD:
+- Frame extraction: 6-8 hours (3,431 videos)
+- Face detection: 2-4 hours (GPU accelerated)
+- Total: 8-12 hours
+
+**TOTAL PREPROCESSING TIME: 20-30 hours**
+
+Can run overnight or over 2-3 days.
+
+================================================================================
+DISK SPACE USAGE
+================================================================================
+
+Current usage:
+- Celeb-DF: F:\real\ + F:\fake\ (existing)
+- DFDC: F:\DFDC\faces\ (existing)
+
+New storage required:
+
+FaceForensics++ (7,000 videos):
+- Frames (PNG): ~350-450 GB
+- Faces (JPG 224×224): ~120-150 GB
+- Subtotal: ~500-600 GB
+
+DFD (3,431 videos):
+- Frames (PNG): ~350-450 GB  
+- Faces (JPG 224×224): ~140-170 GB
+- Subtotal: ~490-620 GB
+
+**TOTAL NEW STORAGE: ~1 TB (990-1,220 GB)**
+
+Make sure H:\ drive has at least 1 TB free space!
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+**STEP 1: Check disk space**
+Run this command to check H:\ drive space:
+```cmd
+wmic logicaldisk where "DeviceID='H:'" get FreeSpace
+```
+
+**STEP 2: I will create all preprocessing scripts**
+- 8 scripts total (4 for FF++, 4 for DFD)
+- Adapted from existing DFDC scripts
+- With proper paths for each dataset
+
+**STEP 3: You run preprocessing (in order)**
+FF++ first:
+1. python evaluation\faceforensics++\01_extract_frames_ff.py
+2. python evaluation\faceforensics++\02_detect_faces_ff.py  
+3. python evaluation\faceforensics++\03_parse_metadata_ff.py
+
+DFD second:
+1. python evaluation\dfd\01_extract_frames_dfd.py
+2. python evaluation\dfd\02_detect_faces_dfd.py
+3. python evaluation\dfd\03_parse_metadata_dfd.py
+
+**STEP 4: Create combined dataset**
+- Merge all CSVs (Celeb-DF + FF++ + DFD)
+- Apply 70/15/15 split
+- Calculate class weights
+
+**STEP 5: Train Model B**
+- New config file
+- 30-40 hours training
+- Save as separate model
+
+================================================================================
+IMPORTANT REMINDERS
+================================================================================
+
+✅ DO:
+- Run preprocessing in order (frames → faces → metadata)
+- Monitor disk space during processing
+- Keep existing Celeb-DF and DFDC data untouched
+- Save Model B to separate checkpoint file
+- Document any errors or issues
+
+❌ DON'T:
+- Overwrite Model A checkpoint
+- Delete any existing preprocessed data
+- Mix up output folders
+- Skip metadata parsing step
+
+================================================================================
+READY TO PROCEED?
+================================================================================
+
+Tell me to proceed and I will create all 8 preprocessing scripts
+for FaceForensics++ and DFD datasets.
+
+The scripts will be saved to:
+- j:\DF\evaluation\faceforensics++\
+- j:\DF\evaluation\dfd\

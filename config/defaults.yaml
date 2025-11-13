@@ -49,7 +49,7 @@ optimization:
 paths:
   checkpoints: "checkpoints"              # Checkpoint save directory
   logs: "logs"                            # Training logs directory
-  best_model: "checkpoints/best_model.pth"
+  best_model: "checkpoints/model_alpha_celeb_only.pth"
   last_model: "checkpoints/last_model.pth"
 
 # Hardware
