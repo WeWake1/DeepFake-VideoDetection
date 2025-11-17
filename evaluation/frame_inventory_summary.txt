@@ -1,0 +1,58 @@
+================================================================================
+FRAME EXTRACTION INVENTORY SUMMARY
+================================================================================
+
+OVERALL STATISTICS
+--------------------------------------------------------------------------------
+Total videos checked: 7429
+Total frames extracted: 1,315,939
+  ✓ OK: 7423 (99.9%)
+  ⚠ Low count (<10): 6 (0.1%)
+  ⚠ Has gaps: 0 (0.0%)
+  ✗ Empty: 0 (0.0%)
+
+FACEFORENSICS++ BREAKDOWN
+--------------------------------------------------------------------------------
+  DeepFakeDetection             :  996/1000 OK,    4 problems, 244,905 frames
+  Deepfakes                     : 1000/1000 OK,    0 problems, 170,030 frames
+  Face2Face                     : 1000/1000 OK,    0 problems, 170,030 frames
+  FaceShifter                   : 1000/1000 OK,    0 problems, 170,030 frames
+  FaceSwap                      : 1000/1000 OK,    0 problems, 135,712 frames
+  NeuralTextures                : 1000/1000 OK,    0 problems, 135,711 frames
+  original                      : 1000/1000 OK,    0 problems, 170,030 frames
+
+  Total FF++ videos: 7000
+  Total FF++ frames: 1,196,448
+
+DFD BREAKDOWN
+--------------------------------------------------------------------------------
+  DFD_manipulated_sequences     :   64/  66 OK,    2 problems, 14,243 frames
+  DFD_original sequences        :  363/ 363 OK,    0 problems, 105,248 frames
+
+  Total DFD videos: 429
+  Total DFD frames: 119,491
+
+FILE NAMING PATTERNS DETECTED
+--------------------------------------------------------------------------------
+  frame_5digit_sequential                 : 7000 videos
+  frame_6digit_absolute                   :  429 videos
+
+PROBLEM VIDEOS SUMMARY
+--------------------------------------------------------------------------------
+Total problem videos: 6
+
+Top 20 videos with lowest frame counts:
+  12_20__secret_conversation__B0X1CGG2     (DeepFakeDetection   ):    2 frames - low_count
+  24_19__secret_conversation__NPZW2Z9L     (DeepFakeDetection   ):    4 frames - low_count
+  24_19__secret_conversation__QD5K7BP2     (DeepFakeDetection   ):    5 frames - low_count
+  01_09__secret_conversation__SJZRV69J     (DFD_manipulated_sequences):    5 frames - low_count
+  03_02__secret_conversation__GYX5OFTD     (DeepFakeDetection   ):    6 frames - low_count
+  01_11__outside_talking_still_laughing__4OJNJLOO (DFD_manipulated_sequences):    7 frames - low_count
+
+================================================================================
+FILES GENERATED:
+  - ff_frame_inventory.csv
+  - dfd_frame_inventory.csv
+  - frame_problems.csv
+  - frame_inventory_summary.txt
+================================================================================

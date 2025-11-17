@@ -18,11 +18,14 @@ import queue
 import threading
 
 # ===== DFD CONFIGURATION =====
-INPUT_FRAMES_BASE = r"F:\DFD_preprocessed\frames"
-OUTPUT_FACES_BASE = r"F:\DFD_preprocessed\faces"
+INPUT_FRAMES_BASE = r"F:\DFD_preprocessed\frames"  # Read from F: drive (2,536 videos)
+OUTPUT_FACES_BASE = r"F:\DFD_preprocessed\faces"   # Write faces to F: drive
 
-# Folders to process
-FOLDERS_TO_PROCESS = ['DFD_original sequences', 'DFD_manipulated_sequences']
+# Folders to process (matching extraction script structure)
+FOLDERS_TO_PROCESS = [
+    'DFD_original sequences',
+    'DFD_manipulated_sequences/DFD_manipulated_sequences'
+]
 
 # Face detection settings
 FACE_SIZE = 224
@@ -30,9 +33,9 @@ MIN_FACE_SIZE = 80
 CONFIDENCE_THRESHOLD = 0.95
 FRAME_SKIP = 1  # Process every frame (already skipped during extraction)
 
-# GPU settings
+# GPU settings (optimized for RTX 4500 Ada - 24GB VRAM)
 GPU_DEVICE = 0
-BATCH_SIZE = 32
+BATCH_SIZE = 64  # Increased for 24GB VRAM
 
 # RAM buffering
 RAM_BUFFER_SIZE = 2000
@@ -123,8 +126,7 @@ class FaceDetectorGPU:
             factor=0.709,
             post_process=True,
             device=self.device,
-            keep_all=False,
-            selection_method='largest'
+            keep_all=True  # Extract ALL faces per frame
         )
         
         print(f"✓ MTCNN initialized on {self.device}")
@@ -132,9 +134,9 @@ class FaceDetectorGPU:
             print(f"✓ GPU: {torch.cuda.get_device_name(0)}")
     
     def detect_and_align_batch(self, image_paths):
-        """Detect and align faces from batch of images"""
-        faces = []
-        successful_paths = []
+        """Detect and align ALL faces from batch of images"""
+        # Returns: list of (frame_path, [(face_0, 0), (face_1, 1), ...]) tuples
+        results = []
         
         # Load images
         images = []
@@ -148,25 +150,36 @@ class FaceDetectorGPU:
         # Detect faces
         for img, img_path in zip(images, image_paths):
             if img is None:
-                faces.append(None)
+                results.append((img_path, []))
                 continue
             
             try:
-                face_tensor = self.detector(img)
+                face_tensors = self.detector(img)  # Returns list of faces or None
                 
-                if face_tensor is not None:
-                    # Convert to numpy
-                    face_np = face_tensor.permute(1, 2, 0).cpu().numpy()
-                    face_np = (face_np * 128 + 127.5).astype(np.uint8)
-                    face_bgr = cv2.cvtColor(face_np, cv2.COLOR_RGB2BGR)
-                    faces.append(face_bgr)
-                    successful_paths.append(img_path)
+                if face_tensors is not None:
+                    # Convert all detected faces
+                    frame_faces = []
+                    if isinstance(face_tensors, list):
+                        # Multiple faces detected
+                        for idx, face_tensor in enumerate(face_tensors):
+                            face_np = face_tensor.permute(1, 2, 0).cpu().numpy()
+                            face_np = (face_np * 128 + 127.5).astype(np.uint8)
+                            face_bgr = cv2.cvtColor(face_np, cv2.COLOR_RGB2BGR)
+                            frame_faces.append((face_bgr, idx))
+                    else:
+                        # Single face detected
+                        face_np = face_tensors.permute(1, 2, 0).cpu().numpy()
+                        face_np = (face_np * 128 + 127.5).astype(np.uint8)
+                        face_bgr = cv2.cvtColor(face_np, cv2.COLOR_RGB2BGR)
+                        frame_faces.append((face_bgr, 0))
+                    
+                    results.append((img_path, frame_faces))
                 else:
-                    faces.append(None)
+                    results.append((img_path, []))
             except Exception:
-                faces.append(None)
+                results.append((img_path, []))
         
-        return faces, successful_paths
+        return results
 
 # ============================================================================
 # MAIN PROCESSING
@@ -201,14 +214,21 @@ def process_video_folder(video_folder, output_base, folder_name, detector, write
     for i in range(0, len(frames_to_process), BATCH_SIZE):
         batch = frames_to_process[i:i+BATCH_SIZE]
         
-        faces, successful_paths = detector.detect_and_align_batch(batch)
+        batch_results = detector.detect_and_align_batch(batch)
         
-        # Write detected faces
-        for face, frame_path in zip(faces, successful_paths):
-            if face is not None:
-                frame_name = frame_path.stem
-                output_path = output_folder / f"{frame_name}.{OUTPUT_FORMAT}"
-                writer.add_face(face, output_path)
+        # Write detected faces (with face index if multiple per frame)
+        for frame_path, frame_faces in batch_results:
+            frame_name = frame_path.stem
+            
+            for face_data, face_idx in frame_faces:
+                if len(frame_faces) > 1:
+                    # Multiple faces: frame_00001_0.jpg, frame_00001_1.jpg
+                    output_path = output_folder / f"{frame_name}_{face_idx}.{OUTPUT_FORMAT}"
+                else:
+                    # Single face: frame_00001.jpg
+                    output_path = output_folder / f"{frame_name}.{OUTPUT_FORMAT}"
+                
+                writer.add_face(face_data, output_path)
                 faces_detected += 1
     
     if faces_detected == 0:
@@ -224,6 +244,17 @@ def main():
     print("="*70)
     print("🎯 DFD FACE DETECTOR")
     print("="*70)
+    
+    # GPU Availability Check
+    if not torch.cuda.is_available():
+        print("❌ ERROR: CUDA not available!")
+        print("   Please check your PyTorch installation.")
+        return
+    
+    print(f"✅ GPU: {torch.cuda.get_device_name(GPU_DEVICE)}")
+    print(f"✅ GPU Memory: {torch.cuda.get_device_properties(GPU_DEVICE).total_memory / 1024**3:.1f} GB")
+    print(f"✅ CUDA Version: {torch.version.cuda}")
+    
     print(f"   Input: {INPUT_FRAMES_BASE}")
     print(f"   Output: {OUTPUT_FACES_BASE}")
     print(f"   Face Size: {FACE_SIZE}x{FACE_SIZE}")

@@ -15,17 +15,20 @@ import time
 
 # ===== DFD CONFIGURATION =====
 SOURCE_BASE_DIR = r"H:\DFD Dataset"
-OUTPUT_BASE_DIR = r"I:\DFD_preprocessed"
+OUTPUT_BASE_DIR = r"F:\DFD_preprocessed"  # HDD with 2,536 videos already here
 
-# Folders to process
-FOLDERS_TO_PROCESS = ['DFD_manipulated_sequences']
+# Folders to process (nested structure: DFD_manipulated_sequences/DFD_manipulated_sequences)
+FOLDERS_TO_PROCESS = [
+    ('DFD_manipulated_sequences', 'DFD_manipulated_sequences'),  # (parent_folder, subfolder) - 3,068 videos
+    ('DFD_original sequences', None)  # (folder, None) - 363 videos
+]
 
 # Frame extraction settings
 FRAME_SKIP = 3  # Extract every 3rd frame (matching training data)
 OUTPUT_FORMAT = "png"
 
-# Processing settings
-CONCURRENT_VIDEOS = 8
+# Processing settings (optimized for 72-core Xeon + HDD writes)
+CONCURRENT_VIDEOS = 12  # Increased for better CPU utilization
 FRAME_BUFFER_SIZE = 100
 
 # Resume capability
@@ -145,20 +148,32 @@ def main():
     all_videos = []
     folder_stats = {}
     
-    for folder in FOLDERS_TO_PROCESS:
-        folder_path = source_base / folder
+    for folder_info in FOLDERS_TO_PROCESS:
+        if isinstance(folder_info, tuple):
+            parent_folder, subfolder = folder_info
+            if subfolder:
+                folder_path = source_base / parent_folder / subfolder
+                display_name = f"{parent_folder}/{subfolder}"
+            else:
+                folder_path = source_base / parent_folder
+                display_name = parent_folder
+        else:
+            # Legacy support for simple string folder names
+            folder_path = source_base / folder_info
+            display_name = folder_info
+        
         if not folder_path.exists():
-            print(f"⚠️  Folder not found: {folder}")
+            print(f"⚠️  Folder not found: {display_name}")
             continue
         
         # Get all .mp4 files (including in nested folders)
         video_files = list(folder_path.rglob('*.mp4'))
-        folder_stats[folder] = len(video_files)
+        folder_stats[display_name] = len(video_files)
         
         for video_file in video_files:
-            all_videos.append((video_file, folder))
+            all_videos.append((video_file, display_name))
         
-        print(f"   {folder}: {len(video_files)} videos")
+        print(f"   {display_name}: {len(video_files)} videos")
     
     if not all_videos:
         print("❌ No videos found.")
