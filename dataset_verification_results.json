@@ -1,0 +1,119 @@
+{
+  "verification_date": "2025-11-18",
+  "datasets": {
+    "DFD": {
+      "raw_fake": {
+        "status": "\u2705 EXISTS",
+        "path": "H:\\DFD Dataset\\DFD_manipulated_sequences\\DFD_manipulated_sequences",
+        "count": 3068
+      },
+      "raw_real": {
+        "status": "\u2705 EXISTS",
+        "path": "H:\\DFD Dataset\\DFD_original sequences",
+        "count": 364
+      },
+      "frames_fake": {
+        "status": "\u2705 EXISTS",
+        "path": "F:\\DFD_preprocessed\\frames\\DFD fake frames",
+        "count": 2174
+      },
+      "frames_real": {
+        "status": "\u2705 EXISTS",
+        "path": "F:\\DFD_preprocessed\\frames\\DFD real frames",
+        "count": 363
+      },
+      "faces_fake": {
+        "status": "\u274c NOT SET",
+        "path": null,
+        "count": null
+      },
+      "faces_real": {
+        "status": "\u274c NOT SET",
+        "path": null,
+        "count": null
+      }
+    },
+    "Celeb-DF": {
+      "raw_real": {
+        "status": "\u2705 EXISTS",
+        "path": "H:\\CELEB DataSet\\Celeb-real",
+        "count": 590
+      },
+      "raw_fake": {
+        "status": "\u2705 EXISTS",
+        "path": "H:\\CELEB DataSet\\Celeb-synthesis",
+        "count": 5639
+      },
+      "faces_fake": {
+        "status": "\u2705 EXISTS",
+        "path": "F:\\Celeb_preprocessed\\Faces\\Celeb Fake Faces",
+        "count": 5638
+      },
+      "faces_real": {
+        "status": "\u2705 EXISTS",
+        "path": "F:\\Celeb_preprocessed\\Faces\\Celeb Real Faces",
+        "count": 589
+      }
+    },
+    "DFDC": {
+      "faces_mixed": {
+        "status": "\u2705 EXISTS",
+        "path": "F:\\DFDC_preprocessed\\faces",
+        "count": 384
+      },
+      "metadata": {
+        "status": "\u2705 EXISTS",
+        "path": "J:\\DF\\evaluation\\dfdc\\dfdcmetadata.json",
+        "size": 30277
+      }
+    },
+    "FF++": {
+      "raw_mixed": {
+        "status": "\u2705 EXISTS",
+        "path": "F:\\FF++ Dataset\\FaceForensics++_C23",
+        "count": 8
+      },
+      "frames_fake": {
+        "status": "\u2705 EXISTS",
+        "path": "F:\\FF++_preprocessed\\frames\\FF Fake Frames",
+        "count": 6
+      },
+      "frames_real": {
+        "status": "\u2705 EXISTS",
+        "path": "F:\\FF++_preprocessed\\frames\\FF Real Frames",
+        "count": 1000
+      },
+      "faces_fake": {
+        "status": "\u274c NOT SET",
+        "path": null,
+        "count": null
+      },
+      "faces_real": {
+        "status": "\u274c NOT SET",
+        "path": null,
+        "count": null
+      },
+      "metadata": {
+        "status": "\u274c NOT A FILE",
+        "path": "J:\\DF\\evaluation\\faceforensics++\\csv provided along with the dataset",
+        "size": null
+      }
+    }
+  },
+  "preprocessing_needed": {
+    "DFD": [
+      "Extract fake faces",
+      "Extract real faces"
+    ],
+    "FF++": [
+      "Extract fake faces",
+      "Extract real faces"
+    ]
+  },
+  "next_steps": [
+    "Extract faces from DFD frames",
+    "Extract faces from FF++ frames",
+    "Parse metadata for both datasets",
+    "Create combined training dataset"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "datasets": {
+    "FaceForensics++": {
+      "real_count": 0,
+      "fake_count": 0,
+      "breakdown": {},
+      "total": 0
+    },
+    "DeepFake_Detection": {
+      "real_count": 0,
+      "fake_count": 0,
+      "total": 0
+    },
+    "Celeb-DF": {
+      "real_count": 518,
+      "fake_count": 2495,
+      "total": 3013,
+      "note": "Real count from Celeb-DF documentation (518 YouTube videos)"
+    }
+  },
+  "totals": {
+    "real_videos": 518,
+    "fake_videos": 2495,
+    "total_videos": 3013
+  },
+  "training_data": {
+    "total_pairs": 5490,
+    "unique_real": 558,
+    "unique_fake": 5490,
+    "dataset_breakdown": {}
+  },
+  "analysis_date": "2025-11-17"
+}
